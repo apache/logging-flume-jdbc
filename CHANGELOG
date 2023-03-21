@@ -1,0 +1,7 @@
+Release Notes - Flume JDBC - Version 2.0.0
+
+** Improvement
+    * [FLUME-3458] - Move the JDBC Channel to its own repo.
+
+
+
