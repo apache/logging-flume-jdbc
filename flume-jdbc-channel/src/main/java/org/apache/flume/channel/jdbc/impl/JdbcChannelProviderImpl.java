@@ -32,13 +32,12 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import javax.sql.DataSource;
 
-import org.apache.commons.dbcp.ConnectionFactory;
-import org.apache.commons.dbcp.DriverManagerConnectionFactory;
-import org.apache.commons.dbcp.PoolableConnectionFactory;
-import org.apache.commons.dbcp.PoolingDataSource;
-import org.apache.commons.pool.KeyedObjectPoolFactory;
-import org.apache.commons.pool.impl.GenericKeyedObjectPoolFactory;
-import org.apache.commons.pool.impl.GenericObjectPool;
+import org.apache.commons.dbcp2.ConnectionFactory;
+import org.apache.commons.dbcp2.DriverManagerConnectionFactory;
+import org.apache.commons.dbcp2.PoolableConnection;
+import org.apache.commons.dbcp2.PoolableConnectionFactory;
+import org.apache.commons.dbcp2.PoolingDataSource;
+import org.apache.commons.pool2.impl.GenericObjectPool;
 import org.apache.flume.Context;
 import org.apache.flume.Event;
 import org.apache.flume.channel.jdbc.ConfigurationConstants;
@@ -63,10 +62,7 @@ public class JdbcChannelProviderImpl implements JdbcChannelProvider {
   private static final String DEFAULT_DBTYPE = "DERBY";
 
   /** The connection pool. */
-  private GenericObjectPool connectionPool;
-
-  /** The statement cache pool */
-  private KeyedObjectPoolFactory statementPool;
+  private GenericObjectPool<PoolableConnection> connectionPool;
 
   /** The data source. */
   private DataSource dataSource;
@@ -537,7 +533,8 @@ public class JdbcChannelProviderImpl implements JdbcChannelProvider {
     ConnectionFactory connFactory =
         new DriverManagerConnectionFactory(connectUrl, jdbcProps);
 
-    connectionPool = new GenericObjectPool();
+    PoolableConnectionFactory poolableConnectionFactory = new PoolableConnectionFactory(connFactory, null);
+    connectionPool = new GenericObjectPool<PoolableConnection>(poolableConnectionFactory);
 
     String maxActiveConnections = getConfigurationString(context,
         ConfigurationConstants.CONFIG_MAX_CONNECTIONS,
@@ -554,14 +551,14 @@ public class JdbcChannelProviderImpl implements JdbcChannelProvider {
     }
 
     LOGGER.debug("Max active connections for the pool: " + maxActive);
-    connectionPool.setMaxActive(maxActive);
+    connectionPool.setMaxTotal(maxActive);
 
-    statementPool = new GenericKeyedObjectPoolFactory(null);
 
-    // Creating the factory instance automatically wires the connection pool
-    new PoolableConnectionFactory(connFactory, connectionPool, statementPool,
-        databaseType.getValidationQuery(), false, false,
-        txIsolationLevel.getCode());
+    poolableConnectionFactory.setPool(connectionPool);
+    poolableConnectionFactory.setPoolStatements(true);
+    poolableConnectionFactory.setMaxOpenPreparedStatements(-1);
+    poolableConnectionFactory.setAutoCommitOnReturn(false);
+    poolableConnectionFactory.setDefaultAutoCommit(false);
 
     dataSource = new PoolingDataSource(connectionPool);
 
