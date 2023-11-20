@@ -39,7 +39,7 @@ limitations under the License.
     <SigningUserName>rgoers@apache.org</SigningUserName>
     <checksum-maven-plugin.version>1.11</checksum-maven-plugin.version>
     <commons-dbcp.version>1.4</commons-dbcp.version>
-    <derby.version>10.14.2.0</derby.version>
+    <derby.version>10.17.1.0</derby.version>
     <flume.version>1.11.0</flume.version>
     <junit.version>4.13.2</junit.version>
     <log4j.version>2.20.0</log4j.version>
